@@ -33,8 +33,7 @@ def test_with_sample():
         print(f"测试失败: {e}")
         print("请确保：")
         print("1. 已安装所有依赖: pip install -r requirements.txt")
-        print("2. 已安装 Tesseract OCR")
-        print("3. 图片路径正确且图片包含文字")
+        print("2. 图片路径正确且图片包含文字")
 
 if __name__ == "__main__":
     test_with_sample() 
