@@ -36,4 +36,4 @@ def test_with_sample():
         print("2. 图片路径正确且图片包含文字")
 
 if __name__ == "__main__":
-    test_with_sample() 
+     test_with_sample()
