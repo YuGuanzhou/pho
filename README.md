@@ -19,33 +19,39 @@
 pip install -r requirements.txt
 ```
 
-> 依赖：easyocr、Pillow、numpy、torch（EasyOCR自动安装）、mcp（MCP服务器模式）
+> 依赖：Pillow<10.0.0、easyocr>=1.7.0、numpy>=1.19.0、mcp>=1.0.0、torch>=1.9.0、opencv-python>=4.5.0
 
 ## 使用方法
 
 ### 1. 命令行方式
 
 ```bash
-python replace_text_in_image.py --image 输入图片.jpg --text "新文字" --output 输出图片.jpg --font 字体文件.ttf
+python replace_text_in_image.py --image 输入图片.jpg --text "新文字" --output 输出图片.jpg --font 字体文件.ttf --fontsize 32
 ```
 
 **参数说明：**
-- `--image`：输入图片路径
-- `--text`：要写入的新文字
-- `--output`：输出图片路径
-- `--font`：字体文件路径（如 simhei.ttf，推荐指定支持中文的字体）
+- `--image`：输入图片路径（必需）
+- `--text`：要写入的新文字（必需）
+- `--output`：输出图片路径（必需）
+- `--font`：字体文件路径（可选，如 simhei.ttf，推荐指定支持中文的字体）
 - `--fontsize`：字体大小（可选，默认32）
 
 ### 2. Python调用
 
 ```python
 from replace_text_in_image import remove_text_and_replace
+import easyocr
+
+# 创建 EasyOCR 读取器（可选，函数内部会自动创建）
+reader = easyocr.Reader(['ch_sim', 'en'], gpu=False)
+
 remove_text_and_replace(
     image_path='输入图片.jpg',
     new_text='新文字',
     output_path='输出图片.jpg',
-    font_path='simhei.ttf',
-    font_size=32
+    font_path='simhei.ttf',  # 可选
+    font_size=32,            # 可选，默认32
+    reader=reader            # 可选，默认None
 )
 ```
 
@@ -84,14 +90,15 @@ chmod +x start_mcp_server.sh
 - **参数**：
   - `image_data` (string, 必需): Base64编码的图片数据或图片文件路径
   - `new_text` (string, 必需): 用于替换原图片文字的新文字
-  - `font_path` (string, 可选): 自定义字体文件路径（TTF格式）
+  - `font_path` (string, 可选): 自定义字体文件路径（TTF格式），默认None
   - `font_size` (integer, 可选): 新文字的字体大小，默认32
-  - `output_format` (string, 可选): 输出格式（'base64' 或 'file'，默认'base64'）
+  - `output_format` (string, 可选): 输出格式（'base64' 或 'file'），默认'base64'
 
 **工具2：detect_text_regions**
 - **功能**：检测图片中的文字区域（不进行替换）
 - **参数**：
   - `image_data` (string, 必需): Base64编码的图片数据或图片文件路径
+- **返回**：JSON格式的文字区域信息，包含坐标和尺寸
 
 #### 使用示例
 
@@ -221,6 +228,28 @@ asyncio.run(use_image_text_replacement())
 2. **对检测到的区域做多边形遮罩+模糊/填充**，最大程度去除原文字
 3. **在原位置写入新文字**，支持自适应字号、描边、颜色自定义
 
+## 核心算法参数
+- `BOX_EXPAND_SCALE = 1.03`：检测框膨胀比例，越大模糊区域越大，建议1.01~1.10
+- `CONFIDENCE_THRESHOLD = 0.4`：OCR置信度阈值，越高越严格
+- `MAX_BOXES = 8`：只处理置信度最高的前N个检测框
+- `MASK_BLUR_RADIUS = 2`：遮罩羽化半径，越大边缘越柔和
+- `FILL_BLUR_RADIUS = 10`：区域背景模糊半径，越大越无痕
+- `FINAL_BLUR_RADIUS = 5`：最终整体模糊半径，越大越无痕
+
+## 核心函数说明
+
+### 主要函数
+- `remove_text_and_replace()`: 主要功能函数，执行文字检测、去除和替换
+- `fast_ocr()`: 快速OCR检测，使用EasyOCR识别文字区域
+- `get_adaptive_font()`: 自适应字体大小，确保文字适合检测框
+- `expand_box()`: 检测框膨胀，扩大处理区域
+- `merge_boxes()`: 合并重叠检测框，避免重复处理
+
+### 辅助函数（当前版本未使用）
+- `shrink_polygon()`: 多边形收缩功能（预留）
+- `get_region_main_color()`: 区域主色调检测（预留）
+- `adaptive_threshold_mask()`: 自适应阈值遮罩（预留）
+
 ## 效果说明
 - 适合背景较为均匀、文字与背景对比明显的图片
 - 对复杂背景、低对比度、雾气/光晕等情况，自动检测和去除效果有限
@@ -323,6 +352,7 @@ result = await client.call_tool(
 2. 处理包含敏感信息的图片时注意数据安全
 3. 建议在生产环境中使用虚拟环境
 4. 定期更新依赖包以获得最新功能和安全性修复
+5. EasyOCR首次运行会下载模型文件，需要网络连接
 
 ## 文件结构
 ```
