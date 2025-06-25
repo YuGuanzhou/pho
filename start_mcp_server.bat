@@ -1,4 +1,5 @@
 @echo off
+chcp 65001
 echo 启动图片文字替换 MCP 服务器...
 echo.
 echo 确保已安装依赖包：

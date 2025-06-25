@@ -17,6 +17,7 @@ from pathlib import Path
 import mcp.server
 import mcp.server.stdio
 import mcp.types as types
+from mcp.server import NotificationOptions
 from mcp.server.models import InitializationOptions
 
 from replace_text_in_image import remove_text_and_replace
@@ -254,6 +255,7 @@ class ImageTextReplacementServer:
 
 async def main():
     """主入口点"""
+    print("MCP 服务器已启动，等待客户端连接...")
     # 创建服务器实例
     server = ImageTextReplacementServer()
     
@@ -266,7 +268,7 @@ async def main():
                 server_name="image-text-replacement",
                 server_version="1.0.0",
                 capabilities=server.server.get_capabilities(
-                    notification_options=None,
+                    notification_options=NotificationOptions(),
                     experimental_capabilities={},
                 ),
             ),
